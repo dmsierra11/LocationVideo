@@ -11,13 +11,14 @@ import CoreLocation
 import AVFoundation
 import AVKit
 
-class ViewController: UIViewController, CLLocationManagerDelegate {
+class ViewController: UIViewController {
     
-    let coordinateEtsisi = CLLocation(latitude: 40.389776, longitude: -3.6305987)
+    let coordinatesUPM = CLLocation(latitude: 40.389776, longitude: -3.6305987)
 
     var locationManager:CLLocationManager!
     
-    @IBOutlet var btnPlay: UIButton!
+    var entered: Bool = false
+    
     @IBOutlet var radius: UILabel!
     
     override func viewDidLoad() {
@@ -32,21 +33,24 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        determineMyCurrentLocation();
+        getCurrentLocation();
+    }
+    
+    func playVideo(){
+        performSegue(withIdentifier: "showVideoSegue", sender: self)
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        print(documentsPath.path)
+//        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+//        print(documentsPath.path)
         
         // Carga la lista de archivos del directorio documentos
-        let fm = FileManager.default
-        let allfiles = try? fm.contentsOfDirectory(atPath: documentsPath.path)
-        print(allfiles!)
+//        let fm = FileManager.default
+//        let allfiles = try? fm.contentsOfDirectory(atPath: documentsPath.path)
+//        print(allfiles!)
         
-        let destination = segue.destination as!
-            AVPlayerViewController
+        let destination = segue.destination as! AVPlayerViewController
 //        let videoPath = documentsPath.path+"/The_Arena_Lindsey_Stirling_4MCjU_Du3eI_18.mov"
 //        print(videoPath)
 //        let url = URL(string: videoPath)
@@ -58,7 +62,21 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         }
     }
     
-    func determineMyCurrentLocation() {
+    func showAlert() {
+        let alert = UIAlertController(title: "Video Available",
+                                      message: "Video available in this area, click to play", preferredStyle: .alert)
+        let ok = UIAlertAction(title: "Play", style: .default, handler: { action -> Void in
+            self.playVideo()
+        })
+        let cancel = UIAlertAction(title: "Cancel", style: .default, handler: nil)
+        alert.addAction(ok)
+        alert.addAction(cancel)
+        present(alert, animated: true, completion: nil)
+    }
+}
+
+extension ViewController: CLLocationManagerDelegate {
+    func getCurrentLocation() {
         locationManager = CLLocationManager()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
@@ -73,28 +91,20 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         let userLocation:CLLocation = locations[0] as CLLocation
         
-        // Call stopUpdatingLocation() to stop listening for location updates,
-        // other wise this function will be called every time when user location changes.
+        let currentLocation = CLLocation(latitude: userLocation.coordinate.latitude, longitude: userLocation.coordinate.longitude)
         
-        // manager.stopUpdatingLocation()
+        let radiusInMeters = coordinatesUPM.distance(from: currentLocation)
+        radius.text = String(radiusInMeters)
         
-        print("user latitude = \(userLocation.coordinate.latitude)")
-        print("user longitude = \(userLocation.coordinate.longitude)")
-        
-        let coordinateCurrent = CLLocation(latitude: userLocation.coordinate.latitude, longitude: userLocation.coordinate.longitude)
-        
-        let distanceInMeters = coordinateEtsisi.distance(from: coordinateCurrent)
-        print("distance = \(distanceInMeters)")
-        radius.text = String(distanceInMeters)
-        
-        
-        if(distanceInMeters <= 100)
+        if(radiusInMeters <= 100 && !entered)
         {
-            self.btnPlay.isHidden = false
+//            self.btnPlay.isHidden = false
+            entered = true
+            showAlert()
         }
-        else
+        else if (radiusInMeters > 100)
         {
-            self.btnPlay.isHidden = true
+            entered = false
         }
     }
     
@@ -102,6 +112,5 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     {
         print("Error \(error)")
     }
-
 }
 
